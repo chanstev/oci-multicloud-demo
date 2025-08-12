@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "uksouth" },
+    "keyVaultId": {
+      "value": "/subscriptions/<subId>/resourceGroups/<rgName>/providers/Microsoft.KeyVault/vaults/<kvName>"
+    },
+    "keyVaultName": { "value": "<kvName>" },
+    "kvSecretName_ociConfig": { "value": "oci-config" },
+    "kvSecretName_ociPrivateKey": { "value": "oci-privatekey" },
+    "adbAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/<subId>/resourceGroups/<rgName>/providers/Microsoft.KeyVault/vaults/<kvName>"
+        },
+        "secretName": "adb-admin-password"
+      }
+    },
+    "ociRegion": { "value": "uk-london-1-azr" },
+    "adbsAName": { "value": "adbs-a" },
+    "adbsBName": { "value": "adbs-b" },
+    "adbsAEcpu": { "value": 64 },
+    "adbsBEcpu": { "value": 1 },
+    "dbWorkload": { "value": "OLTP" },
+    "dbVersion": { "value": "19c" },
+    "uamiName": { "value": "adb-oci-uami" },
+    "subnetResourceId": { "value": "" }
+  }
+}
