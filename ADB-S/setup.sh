@@ -25,8 +25,8 @@ export ADBS_PW='your_db_password'
 
 # uncomment the following line to check OCI access
 # oci iam tenancy get --tenancy-id $OCI_CLI_TENANCY --output table --query "data.{Name:name, OCID:id}" --auth api_key
-az keyvault secret set --vault-name ${keyvaultName} --name "oci-tenancy-ocid" --value "${OCI_CLI_TENANCY}" 
-az keyvault secret set --vault-name ${keyvaultName} --name "oci-user-ocid" --value "{$OCI_CLI_USER}" 
-az keyvault secret set --vault-name ${keyvaultName} --name "oci-fingerprint" --value "{$OCI_CLI_FINGERPRINT}" 
-az keyvault secret set --vault-name ${keyvaultName} --name "oci-api-key" --file $OCI_CLI_KEY_FILE 
+az keyvault secret set --vault-name ${keyvaultName} --name "oci-tenancy-ocid" --value $OCI_CLI_TENANCY 
+az keyvault secret set --vault-name ${keyvaultName} --name "oci-user-ocid" --value $OCI_CLI_USER
+az keyvault secret set --vault-name ${keyvaultName} --name "oci-fingerprint" --value $OCI_CLI_FINGERPRINT
+az keyvault secret set --vault-name ${keyvaultName} --name "oci-api-key" --file $OCI_CLI_KEY_FILE
 az keyvault secret set --vault-name ${keyvaultName} --name "oci-adbs-adminpw" --value $ADBS_PW 
