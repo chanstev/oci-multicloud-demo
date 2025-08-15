@@ -35,9 +35,10 @@ Refer to [`setup.sh`](setup.sh) for setup instructions.
 2. **Deploy the resources:**
     ```
     az deployment group create \
-      --resource-group ${resourceGroupName} \
       --template-file adbs-main.json \
+      --resource-group 'your-resource-group' \
       --parameters \
-        owner='Your Name'
+        owner='Your Name' \
         keyVaultName='your-keyvault-name' \
+        location='azureregion'
     ```
