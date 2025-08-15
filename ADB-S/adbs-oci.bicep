@@ -40,6 +40,7 @@ resource adbsAzRes 'Oracle.Database/autonomousDatabases@2025-03-01' existing = {
 }
 
 var scriptContentParam = {
+  location: location
   adbsOcid: adbsAzRes.properties.ocid
   adbsOciRegion: split(adbsAzRes.properties.ocid, '.')[3]
   timeoutInMinutes: timeoutInMinutes
@@ -62,10 +63,10 @@ export PATH="$PATH:/root/bin"
 
 # Wait for ADB-S to be available
 echo "Waiting for ADB-S to be available..."
-timeout ${timeoutInMinutes}m bash -lc "until (($(oci db autonomous-database get --region uk-london-1 --autonomous-database-id ${adbsOcid} --query 'data."lifecycle-state"' | grep -c 'AVAILABLE') > 0)); do printf . ;sleep 5; done"
+timeout ${timeoutInMinutes}m bash -lc "until (($(oci db autonomous-database get --region ${adbsOciRegion} --autonomous-database-id ${adbsOcid} --query 'data."lifecycle-state"' | grep -c 'AVAILABLE') > 0)); do printf . ;sleep 5; done"
 
 # Wait for elastic pool leader to be available
-[[ $(echo ${elasticPoolResourcePoolLeaderId} | wc -m) -gt 26 ]] && timeout ${timeoutInMinutes}m bash -lc "until (($(oci db autonomous-database get --region uk-london-1 --autonomous-database-id ${elasticPoolResourcePoolLeaderId} --query 'data."lifecycle-state"' | grep -c 'AVAILABLE') > 0)); do printf . ;sleep 5; done"
+[[ $(echo ${elasticPoolResourcePoolLeaderId} | wc -m) -gt 26 ]] && timeout ${timeoutInMinutes}m bash -lc "until (($(oci db autonomous-database get --region ${adbsOciRegion} --autonomous-database-id ${elasticPoolResourcePoolLeaderId} --query 'data."lifecycle-state"' | grep -c 'AVAILABLE') > 0)); do printf . ;sleep 5; done"
 
 # Set the ADB-S as elastic pool leader or member
 oci db autonomous-database update \
