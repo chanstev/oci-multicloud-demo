@@ -1,6 +1,6 @@
 # Oracle Database@Azure: Demo of Bicep with OCI CLI
 
-This repository provides an example of how to provision Oracle Database on Azure by combining Bicep and OCI CLI.
+Example of how to provision Oracle Database@Azure by combining Bicep and OCI CLI.
 
 ## Autonomous Database (ADB-S)
 
