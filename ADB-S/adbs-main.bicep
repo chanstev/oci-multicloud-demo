@@ -1,5 +1,6 @@
 param keyVaultName string = 'akv-uk-01'
 param owner string = 'Steven Chan'
+param location string = resourceGroup().location
 
 
 // Prepare to get secret from existing AKV
@@ -12,7 +13,7 @@ resource akv 'Microsoft.KeyVault/vaults@2024-12-01-preview' existing = {
 module adbsEpLeader 'adbs-az.bicep' = {
   name: 'adbs01'
   params: {
-    location: resourceGroup().location
+    location: location
     owner: owner
     purpose: 'Elastic Pool Leader for ADB-S via Bicep and OCI CLI'
     env: 'POC'
@@ -41,7 +42,7 @@ module becomeEpLeader 'adbs-oci.bicep' = {
 module adbsEpMember 'adbs-az.bicep' = {
   name: 'adbs02'
   params: {
-    location: resourceGroup().location
+    location: location
     owner: owner
     purpose: 'Elastic Pool Member for ADB-S via Bicep and OCI CLI'
     env: 'POC'

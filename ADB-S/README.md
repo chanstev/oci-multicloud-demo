@@ -35,5 +35,8 @@ Refer to [`setup.sh`](setup.sh) for setup instructions.
     ```
     az deployment group create \
       --resource-group ${resourceGroupName} \
-      --template-file adbs-main.json
+      --template-file adbs-main.json \
+      --parameters \
+        owner='Your Name'
+        keyVaultName='your-keyvault-name' \
     ```
