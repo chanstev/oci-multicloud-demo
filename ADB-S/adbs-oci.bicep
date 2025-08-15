@@ -1,155 +1,97 @@
-param location string
-param uamiId string
-param keyVaultName string
-param kvSecretName_ociConfig string
-param kvSecretName_ociPrivateKey string
-param ociRegion string
-param adbsA_Ocid string
-param adbsB_Ocid string
-param subnetResourceId string
+param deploymentScriptsName string = 'ociCli-adbs-update'
+param location string = resourceGroup().location
+param adbsName string
+param timeoutInMinutes string = '15' // how long to wait for ADB-S to be available before failing the script
 
-var useVnet = !empty(subnetResourceId)
+@description('OCID of elastic pool leader, for elastic pool member only')
+param elasticPoolResourcePoolLeaderId string = 'null'
 
-@description('Promote adbs-a as elastic pool leader (OCI CLI update)')
-resource scriptMakeLeader 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'oci-make-leader'
-  location: location
-  kind: 'AzureCLI'
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uamiId}': {}
-    }
-  }
-  properties: {
-    azCliVersion: '2.63.0'
-    retentionInterval: 'P1D'
-    timeout: 'PT60M'
-    cleanupPreference: 'OnSuccess'
-    vnetSetting: useVnet ? {
-      subnetResourceId: subnetResourceId
-    } : null
-    environmentVariables: [
-      { name: 'KV_NAME', value: keyVaultName }
-      { name: 'KV_SECRET_OCI_CONFIG', value: kvSecretName_ociConfig }
-      { name: 'KV_SECRET_OCI_KEY', value: kvSecretName_ociPrivateKey }
-      { name: 'OCI_REGION', value: ociRegion }
-      { name: 'LEADER_ADB_OCID', value: adbsA_Ocid }
-      { name: 'POOL_ECPU', value: '1024' } // adjust to your pool size
-    ]
-    scriptContent: '''
-set -euo pipefail
+@description('Elastic Pool is disabled or not, for elastic pool leader only')
+@allowed([
+  'null'
+  'true'
+])
+param elasticPoolIsDisabled string = 'true'
 
-# Pull OCI creds from Key Vault using the UAMI
-OCI_CONFIG_TEXT=$(az keyvault secret show --vault-name "$KV_NAME" --name "$KV_SECRET_OCI_CONFIG" --query value -o tsv)
-OCI_KEY_PEM=$(az keyvault secret show --vault-name "$KV_NAME" --name "$KV_SECRET_OCI_KEY" --query value -o tsv)
+@description('Elastic Pool ECPU count, for elastic pool leader only')
+@allowed([
+  'null'
+  '128'
+  '256'
+  '512'
+  '1024'
+  '2048'
+  '4096'
+])
+param elasticPoolEcpuCount string = 'null'
 
-python3 -m pip install --upgrade oci-cli
+@secure()
+param ociFingerprint string
+@secure()
+param ociUser string
+@secure()
+param ociTenancy string
+@secure()
+param ociKeyContent string
 
-mkdir -p ~/.oci
-printf "%s" "$OCI_KEY_PEM" > ~/.oci/oci_api_key.pem
-chmod 600 ~/.oci/oci_api_key.pem
-printf "%s" "$OCI_CONFIG_TEXT" > ~/.oci/config
-chmod 600 ~/.oci/config
-
-# Enable/Configure elastic pool on the leader ADB.
-# NOTE: Exact payload fields for elastic pools may vary by OCI CLI version. Two common patterns are shown:
-#  (A) Explicit pool creation via elasticPool details
-#  (B) Flagging the ADB as pool leader
-
-set +e
-RESP=$(oci db autonomous-database update \
-  --autonomous-database-id "$LEADER_ADB_OCID" \
-  --from-json "{\"elasticPool\":{\"ecpuCount\":$POOL_ECPU}}" \
-  --wait-for-state AVAILABLE \
-  --region "$OCI_REGION" 2>/dev/null)
-RC=$?
-set -e
-
-if [ $RC -ne 0 ]; then
-  # Fallback pattern
-  RESP=$(oci db autonomous-database update \
-    --autonomous-database-id "$LEADER_ADB_OCID" \
-    --from-json '{"isElasticPoolLeader": true}' \
-    --wait-for-state AVAILABLE \
-    --region "$OCI_REGION")
-fi
-
-POOL_ID=$(echo "$RESP" | jq -r '.data["elastic-pool-id"] // empty')
-
-jq -n --arg poolId "$POOL_ID" '{elasticPoolId: $poolId}' > "$AZ_SCRIPTS_OUTPUT_PATH"
-'''
-  }
+resource adbsAzRes 'Oracle.Database/autonomousDatabases@2025-03-01' existing = {
+  name: adbsName
+  scope: resourceGroup()
 }
 
-@description('Join adbs-b to the elastic pool led by adbs-a (OCI CLI update)')
-resource scriptJoin 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'oci-join-pool'
-  location: location
-  kind: 'AzureCLI'
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uamiId}': {}
-    }
-  }
-  properties: {
-    azCliVersion: '2.63.0'
-    retentionInterval: 'P1D'
-    timeout: 'PT60M'
-    cleanupPreference: 'OnSuccess'
-    vnetSetting: useVnet ? {
-      subnetResourceId: subnetResourceId
-    } : null
-    environmentVariables: [
-      { name: 'KV_NAME', value: keyVaultName }
-      { name: 'KV_SECRET_OCI_CONFIG', value: kvSecretName_ociConfig }
-      { name: 'KV_SECRET_OCI_KEY', value: kvSecretName_ociPrivateKey }
-      { name: 'OCI_REGION', value: ociRegion }
-      { name: 'LEADER_ADB_OCID', value: adbsA_Ocid }
-      { name: 'MEMBER_ADB_OCID', value: adbsB_Ocid }
-      { name: 'ELASTIC_POOL_ID', value: scriptMakeLeader.properties.outputs.elasticPoolId }
-    ]
-    scriptContent: '''
-set -euo pipefail
-
-OCI_CONFIG_TEXT=$(az keyvault secret show --vault-name "$KV_NAME" --name "$KV_SECRET_OCI_CONFIG" --query value -o tsv)
-OCI_KEY_PEM=$(az keyvault secret show --vault-name "$KV_NAME" --name "$KV_SECRET_OCI_KEY" --query value -o tsv)
-
-python3 -m pip install --upgrade oci-cli
-
-mkdir -p ~/.oci
-printf "%s" "$OCI_KEY_PEM" > ~/.oci/oci_api_key.pem
-chmod 600 ~/.oci/oci_api_key.pem
-printf "%s" "$OCI_CONFIG_TEXT" > ~/.oci/config
-chmod 600 ~/.oci/config
-
-# Join member to pool - try with explicit pool id first, fallback to leader id
-set +e
-if [ -n "$ELASTIC_POOL_ID" ]; then
-  oci db autonomous-database update \
-    --autonomous-database-id "$MEMBER_ADB_OCID" \
-    --from-json "{\"elasticPoolId\": \"$ELASTIC_POOL_ID\"}" \
-    --wait-for-state AVAILABLE \
-    --region "$OCI_REGION"
-  RC=$?
-else
-  RC=1
-fi
-
-if [ $RC -ne 0 ]; then
-  oci db autonomous-database update \
-    --autonomous-database-id "$MEMBER_ADB_OCID" \
-    --from-json "{\"joinElasticPoolLeaderId\": \"$LEADER_ADB_OCID\"}" \
-    --wait-for-state AVAILABLE \
-    --region "$OCI_REGION" || true
-fi
-set -e
-
-jq -n --arg memberId "$MEMBER_ADB_OCID" '{joinedMemberId: $memberId}' > "$AZ_SCRIPTS_OUTPUT_PATH"
-'''
-    dependsOn: [ scriptMakeLeader ]
-  }
+var scriptContentParam = {
+  adbsOcid: adbsAzRes.properties.ocid
+  adbsOciRegion: split(adbsAzRes.properties.ocid, '.')[3]
+  timeoutInMinutes: timeoutInMinutes
+  elasticPoolResourcePoolLeaderId: elasticPoolResourcePoolLeaderId
+  elasticPoolIsDisabled: elasticPoolIsDisabled
+  elasticPoolEcpuCount: elasticPoolEcpuCount
+  // JSON configuration for the ADB-S update (elasticPoolResourcePoolLeaderId is only used for member, resource-pool-summary is only used for leader)
+  json_config: elasticPoolResourcePoolLeaderId != 'null' ? '{"resource-pool-leader-id":"${elasticPoolResourcePoolLeaderId}"}' : '{"resource-pool-summary":{"is-disabled":${elasticPoolIsDisabled}, "pool-size":${elasticPoolEcpuCount}}}'
 }
 
-output elasticPoolId string = scriptMakeLeader.properties.outputs.elasticPoolId
+var scriptContentTemplate = '''
+set -euo pipefail
+
+# Install OCI CLI
+apk add --no-cache coreutils
+curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh -o install.sh
+chmod +x install.sh
+bash install.sh --accept-all-defaults
+export PATH="$PATH:/root/bin"
+
+# Wait for ADB-S to be available
+echo "Waiting for ADB-S to be available..."
+timeout ${timeoutInMinutes}m bash -lc "until (($(oci db autonomous-database get --region uk-london-1 --autonomous-database-id ${adbsOcid} --query 'data."lifecycle-state"' | grep -c 'AVAILABLE') > 0)); do printf . ;sleep 5; done"
+
+# Wait for elastic pool leader to be available
+[[ $(echo ${elasticPoolResourcePoolLeaderId} | wc -m) -gt 26 ]] && timeout ${timeoutInMinutes}m bash -lc "until (($(oci db autonomous-database get --region uk-london-1 --autonomous-database-id ${elasticPoolResourcePoolLeaderId} --query 'data."lifecycle-state"' | grep -c 'AVAILABLE') > 0)); do printf . ;sleep 5; done"
+
+# Set the ADB-S as elastic pool leader or member
+oci db autonomous-database update \
+  --autonomous-database-id ${adbsOcid} \
+  --region ${adbsOciRegion} --wait-for-state AVAILABLE \
+  --from-json '${json_config}' \
+  --force --query data --output json | jq > $AZ_SCRIPTS_OUTPUT_PATH
+'''
+
+resource ociCli 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
+  name: deploymentScriptsName
+  location: location
+  kind: 'AzureCLI'
+  properties: {
+    azCliVersion: '2.52.0'
+    retentionInterval: 'PT1H'
+    environmentVariables: [
+      { name: 'OCI_CLI_TENANCY', secureValue: ociTenancy}
+      { name: 'OCI_CLI_USER', secureValue: ociUser }
+      { name: 'OCI_CLI_FINGERPRINT', secureValue: ociFingerprint}
+      { name: 'OCI_CLI_KEY_CONTENT', secureValue: ociKeyContent }
+    ]
+    scriptContent: reduce(
+        items(scriptContentParam),
+        {value: scriptContentTemplate},
+        (curr, next) => {value: replace(curr.value, '\${${next.key}}', next.value)}
+      ).value
+  }
+}
