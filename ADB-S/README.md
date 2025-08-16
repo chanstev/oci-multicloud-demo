@@ -25,20 +25,25 @@ Refer to [`setup.sh`](setup.sh) for setup instructions.
     - Promotes the first ADB-S as elastic pool leader using `adbs-oci.bicep`
     - Joins the second ADB-S as elastic pool member using `adbs-oci.bicep`
 
-## Provisioning Steps
-
-1. **Build the Bicep file:**
+## Provision Steps
+1. Update the [adbs-main.bicepparam](adbs-main.bicepparam)
+2. Create Deployment Stack at Resource Group level.
     ```
-    az bicep build --file adbs-main.bicep
+az stack group create \
+  --name 'demo-adbs-ep' \
+  --resource-group 'rg-demo-adbs-ep' \
+  --template-file 'adbs-main.bicep' \
+  --action-on-unmanage 'deleteAll' --deny-settings-mode none \
+  --parameters adbs-main.bicepparam
     ```
-
-2. **Deploy the resources:**
+## Clean up
+1. Clear the ADB-S Elastic Pool (via OCI)
+    1. Member ADBS: Leave the elastic pool
+    2. Leader ADBS: Terminate the elastic pool
+2. Delete the Deployment Stack
     ```
-    az deployment group create \
-      --template-file adbs-main.json \
-      --resource-group 'your-resource-group' \
-      --parameters \
-        owner='Your Name' \
-        keyVaultName='your-keyvault-name' \
-        location='azureregion'
+    az stack group delete \
+    --name 'demo-adbs-ep' \
+    --resource-group 'rg-demo-adbs-ep' \
+    --action-on-unmanage deleteResources
     ```
