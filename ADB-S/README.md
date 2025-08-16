@@ -29,12 +29,12 @@ Refer to [`setup.sh`](setup.sh) for setup instructions.
 1. Update the [adbs-main.bicepparam](adbs-main.bicepparam)
 2. Create Deployment Stack at Resource Group level.
     ```
-az stack group create \
-  --name 'demo-adbs-ep' \
-  --resource-group 'rg-demo-adbs-ep' \
-  --template-file 'adbs-main.bicep' \
-  --action-on-unmanage 'deleteAll' --deny-settings-mode none \
-  --parameters adbs-main.bicepparam
+    az stack group create \
+    --name 'demo-adbs-ep' \
+    --resource-group 'rg-demo-adbs-ep' \
+    --template-file 'adbs-main.bicep' \
+    --action-on-unmanage 'deleteAll' --deny-settings-mode none \
+    --parameters adbs-main.bicepparam
     ```
 ## Clean up
 1. Clear the ADB-S Elastic Pool (via OCI)
