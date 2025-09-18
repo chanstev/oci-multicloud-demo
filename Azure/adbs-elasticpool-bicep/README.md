@@ -1,4 +1,4 @@
-# Demo: Provisioning ADB-S with Elastic Pool via Bicep & OCI CLI
+# Demo: Provisioning Autonomous Database (ADB-S) with Elastic Pool via Bicep & OCI CLI
 
 This example demonstrates how to configure Autonomous Database (ADB-S) on Oracle Database@Azure with an elastic pool by integrating Bicep and OCI CLI.
 ![Provision Autonomous Database with Elastic pool via Bicep and OCI CLI)](adbs-epool-bicep-ocicli.png)
