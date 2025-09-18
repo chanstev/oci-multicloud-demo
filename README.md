@@ -1,8 +1,12 @@
-# Oracle Database@Azure: Demo of Bicep with OCI CLI
+# Sample code of OCI Multicloud
 
-Example of how to provision Oracle Database@Azure by combining Bicep and OCI CLI.
+This collection of sample code demonstrates how to provision OCI Multicloud solutions using Infrastructure as Code (IaC) practices.
 
-## Autonomous Database (ADB-S)
+## Oracle Database@Azure
 
-- [ADB-S with Elastic Pool](./ADB-S):  
-  Learn how to improve operating efficiency of Autonomous Database@Azure with an [elastic pool](https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/elastic-resource-pools-autonomous.html).
+### Autonomous Database (ADB-S)
+- [Provision ADB-S with Elastic pool via Bicep and OCI CLI](./Azure/adbs-elasticpool-bicep/):
+  Learn how to improve operating efficiency of Autonomous Database@Azure with an [elastic pool](https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/elastic-resource-pools-autonomous.html)
+
+### Base Database
+- [Provision Base Database via Terraform (AzAPI)](./Azure/basedb-tf-azapi/)
