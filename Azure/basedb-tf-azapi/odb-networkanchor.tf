@@ -20,6 +20,7 @@ resource "azapi_resource" "networkanchor" {
     zones = [local.zone]
   }
 
-  # Workaround before AzAPI's schema is updated 
+  # Known issue: 'embedded schema validation failed: the argument "type" is invalid. "resource type Oracle.Database/networkAnchors can't be found.'
+  # Workaround: Disable the validation until AzAPI's schema is updated 
   schema_validation_enabled = false
 }

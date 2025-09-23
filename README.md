@@ -5,8 +5,8 @@ This collection of sample code demonstrates how to provision OCI Multicloud solu
 ## Oracle Database@Azure
 
 ### Autonomous Database (ADB-S)
-- [Provision ADB-S with Elastic pool via Bicep and OCI CLI](./Azure/adbs-elasticpool-bicep/):
+- [Provision ADB-S with Elastic pool via Bicep and OCI CLI](./Azure/ADBS-elasticpool-bicep-ocicli/):
   Learn how to improve operating efficiency of Autonomous Database@Azure with an [elastic pool](https://docs.oracle.com/en/cloud/paas/autonomous-database/serverless/adbsb/elastic-resource-pools-autonomous.html)
 
 ### Base Database
-- [Provision Base Database via Terraform (AzAPI)](./Azure/basedb-tf-azapi/)
+- [Provision Base Database via Terraform (AzAPI)](./Azure/BaseDB-tf-azapi/)

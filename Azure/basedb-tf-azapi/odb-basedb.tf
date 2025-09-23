@@ -30,17 +30,18 @@ resource "azapi_resource" "basedatabase" {
     zones = [local.zone]
   }
 
-  # Create can take up to 24 hours (only occasionally)
+  # Known issue: Create can take up to 24 hours (only occasionally)
   timeouts {
     create = "24h"
     delete = "8h"
   }
 
-  # Workaround before AzAPI's schema is updated 
+  # Known issue: 'embedded schema validation failed: the argument "type" is invalid. "resource type Oracle.Database/dbSystems can't be found.'
+  # Workaround: Disable the validation until AzAPI's schema is updated 
   schema_validation_enabled = false
 }
 
-# Known issue: "VCN has no network security group with name: DefaultAzureNetworkAnchorNsg"
+# Known issue: 'VCN has no network security group with name: DefaultAzureNetworkAnchorNsg'
 # Workaround: Wait a few moments for the default NSG to become fully visible before provisioning the Base Database.
 resource "time_sleep" "post_networkanchor" {
   depends_on = [azapi_resource.networkanchor]
